@@ -1,2 +1,2 @@
 # se-lab2
-**Live Demo:** [CineVerse](https://se-lab2.vercel.app/)
+**Live Demo:** [Diagram](https://se-lab2.vercel.app/)
