@@ -1,0 +1,842 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagram Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+        }
+        .mermaid {
+            background-color: #2d2d2d;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .btn {
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            background-color: #4b5e40;
+        }
+        textarea {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #4b5563;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-gray-900 p-4 shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-green-300">Diagram Dashboard</h1>
+    </header>
+    <main class="flex-grow container mx-auto p-4">
+        <section id="home" class="space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Select a Diagram</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <button onclick="navigateTo('er-diagram')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">ER Diagram</button>
+                <button onclick="navigateTo('context-dfd')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Context-Level DFD</button>
+                <button onclick="navigateTo('level1-dfd')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Level-1 DFD</button>
+                <button onclick="navigateTo('class-diagram')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Class Diagram</button>
+                <button onclick="navigateTo('activity-diagram')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Activity Diagram</button>
+                <button onclick="navigateTo('sequence-diagram')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Sequence Diagram</button>
+                <button onclick="navigateTo('usecase-diagram')" class="btn bg-green-600 text-white py-3 px-6 rounded-lg shadow-md">Use Case Diagram</button>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg shadow-md">
+                <h3 class="text-xl font-semibold text-green-300 mb-4">How to Use in Draw.io</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                    <li>Open Draw.io and create a new diagram.</li>
+                    <li>Click on the "+" icon in the toolbar.</li>
+                    <li>Select "Mermaid" from the menu.</li>
+                    <li>Copy the Mermaid code from the respective diagram page.</li>
+                    <li>Paste the code into the Mermaid editor in Draw.io.</li>
+                    <li>Click "Insert" to render the diagram.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- Diagram Pages -->
+        <section id="er-diagram" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">ER Diagram</h2>
+            <div class="mermaid">
+                graph TD
+                    %% Vertical Layout (Top to Bottom)
+                    CATEGORY[CATEGORY]
+                    PRODUCT[PRODUCT]
+                    CART[CART]
+                    CUSTOMER[CUSTOMER]
+                    ADDRESS[ADDRESS]
+                    ORDER[ORDER]
+                    PAYMENT[PAYMENT]
+                    TRACKING[TRACKING]
+
+                    %% Attributes (Aligned Left)
+                    CATEGORY --> CATID(("category_id (PK)"))
+                    CATEGORY --> CATNAME(("name"))
+
+                    PRODUCT --> PID(("p_id (PK)"))
+                    PRODUCT --> PNAME(("name"))
+                    PRODUCT --> PPRICE(("price"))
+                    PRODUCT -- BELONGS_TO --> CATEGORY
+
+                    CART --> CARTID(("cart_id (PK)"))
+                    CART --> CUSERID(("user_id (FK)"))
+                    CART -- CONTAINS --> PRODUCT
+
+                    CUSTOMER --> CID(("user_id (PK)"))
+                    CUSTOMER --> CNAME(("name"))
+                    CUSTOMER --> CEMAIL(("email"))
+                    CUSTOMER -- OWNS --> CART
+                    CUSTOMER -- HAS --> ADDRESS
+                    CUSTOMER -- PLACES --> ORDER
+
+                    ADDRESS --> AID(("address_id (PK)"))
+                    ADDRESS --> ACOUNTRY(("country"))
+                    ADDRESS --> ASTATE(("state"))
+                    ADDRESS --> ACITY(("city"))
+                    ADDRESS --> APIN(("pin_code"))
+
+                    ORDER --> OID(("order_no (PK)"))
+                    ORDER --> OAMOUNT(("amount"))
+                    ORDER --> ODATE(("date"))
+                    ORDER -- CONTAINS --> PRODUCT
+                    ORDER -- HAS --> PAYMENT
+                    ORDER -- HAS --> TRACKING
+
+                    PAYMENT --> PAYID(("payment_id (PK)"))
+                    PAYMENT --> PAYMETHOD(("method"))
+                    PAYMENT --> PAYAMOUNT(("amount"))
+
+                    TRACKING --> TID(("tracking_id (PK)"))
+                    TRACKING --> TSTATUS(("status"))
+                    TRACKING --> TORDERNO(("order_no (FK)"))
+
+                    %% Relationship Labels
+                    linkStyle 2 stroke:#555,stroke-width:2px,label:N:1
+                    linkStyle 4 stroke:#555,stroke-width:2px,label:M:N
+                    linkStyle 6 stroke:#555,stroke-width:2px,label:1:1
+                    linkStyle 7 stroke:#555,stroke-width:2px,label:1:N
+                    linkStyle 8 stroke:#555,stroke-width:2px,label:1:N
+                    linkStyle 10 stroke:#555,stroke-width:2px,label:1:N
+                    linkStyle 11 stroke:#555,stroke-width:2px,label:1:1
+                    linkStyle 12 stroke:#555,stroke-width:2px,label:1:N
+            </div>
+            <textarea id="er-code" class="w-full h-48 p-4 rounded-lg" readonly>graph TD
+    %% Vertical Layout (Top to Bottom)
+    CATEGORY[CATEGORY]
+    PRODUCT[PRODUCT]
+    CART[CART]
+    CUSTOMER[CUSTOMER]
+    ADDRESS[ADDRESS]
+    ORDER[ORDER]
+    PAYMENT[PAYMENT]
+    TRACKING[TRACKING]
+
+    %% Attributes (Aligned Left)
+    CATEGORY --> CATID(("category_id (PK)"))
+    CATEGORY --> CATNAME(("name"))
+
+    PRODUCT --> PID(("p_id (PK)"))
+    PRODUCT --> PNAME(("name"))
+    PRODUCT --> PPRICE(("price"))
+    PRODUCT -- BELONGS_TO --> CATEGORY
+
+    CART --> CARTID(("cart_id (PK)"))
+    CART --> CUSERID(("user_id (FK)"))
+    CART -- CONTAINS --> PRODUCT
+
+    CUSTOMER --> CID(("user_id (PK)"))
+    CUSTOMER --> CNAME(("name"))
+    CUSTOMER --> CEMAIL(("email"))
+    CUSTOMER -- OWNS --> CART
+    CUSTOMER -- HAS --> ADDRESS
+    CUSTOMER -- PLACES --> ORDER
+
+    ADDRESS --> AID(("address_id (PK)"))
+    ADDRESS --> ACOUNTRY(("country"))
+    ADDRESS --> ASTATE(("state"))
+    ADDRESS --> ACITY(("city"))
+    ADDRESS --> APIN(("pin_code"))
+
+    ORDER --> OID(("order_no (PK)"))
+    ORDER --> OAMOUNT(("amount"))
+    ORDER --> ODATE(("date"))
+    ORDER -- CONTAINS --> PRODUCT
+    ORDER -- HAS --> PAYMENT
+    ORDER -- HAS --> TRACKING
+
+    PAYMENT --> PAYID(("payment_id (PK)"))
+    PAYMENT --> PAYMETHOD(("method"))
+    PAYMENT --> PAYAMOUNT(("amount"))
+
+    TRACKING --> TID(("tracking_id (PK)"))
+    TRACKING --> TSTATUS(("status"))
+    TRACKING --> TORDERNO(("order_no (FK)"))
+
+    %% Relationship Labels
+    linkStyle 2 stroke:#555,stroke-width:2px,label:N:1
+    linkStyle 4 stroke:#555,stroke-width:2px,label:M:N
+    linkStyle 6 stroke:#555,stroke-width:2px,label:1:1
+    linkStyle 7 stroke:#555,stroke-width:2px,label:1:N
+    linkStyle 8 stroke:#555,stroke-width:2px,label:1:N
+    linkStyle 10 stroke:#555,stroke-width:2px,label:1:N
+    linkStyle 11 stroke:#555,stroke-width:2px,label:1:1
+    linkStyle 12 stroke:#555,stroke-width:2px,label:1:N</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('er-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="context-dfd" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Context-Level DFD</h2>
+            <div class="mermaid">
+                graph TD;
+                    %% Entities and System
+                    User[USER]
+                    Admin[ADMIN]
+                    System[Online Shopping System]
+
+                    %% Data Flows
+                    User -->|1. Request for Registration| System
+                    User -->|2. Request for Login| System
+                    System -->|3. Response| User
+
+                    Admin -->|4. Login / Manage System| System
+                    System -->|5. Response| Admin
+            </div>
+            <textarea id="context-dfd-code" class="w-full h-48 p-4 rounded-lg" readonly>graph TD;
+    %% Entities and System
+    User[USER]
+    Admin[ADMIN]
+    System[Online Shopping System]
+
+    %% Data Flows
+    User -->|1. Request for Registration| System
+    User -->|2. Request for Login| System
+    System -->|3. Response| User
+
+    Admin -->|4. Login / Manage System| System
+    System -->|5. Response| Admin</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('context-dfd-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="level1-dfd" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Level-1 DFD</h2>
+            <div class="mermaid">
+                graph TD;
+                    %% External Entities
+                    Customer[External Entity: Customer]
+                    Admin[External Entity: Admin]
+                    PaymentGateway[External Entity: Payment Gateway]
+
+                    %% Internal Processes
+                    P1[Process: 1. User Management]
+                    P2[Process: 2. Product Browsing]
+                    P3[Process: 3. Order Processing]
+                    P4[Process: 4. Payment Handling]
+                    P5[Process: 5. Admin Control]
+
+                    %% Data Stores
+                    D1[(User Database)]
+                    D2[(Product Catalog)]
+                    D3[(Order Records)]
+                    D4[(Payment Records)]
+
+                    %% Customer Interactions
+                    Customer -->|Register/Login| P1
+                    P1 --> D1
+                    P1 -->|Profile Info| Customer
+
+                    Customer -->|Browse Products| P2
+                    P2 --> D2
+                    P2 -->|Product Info| Customer
+
+                    Customer -->|Place Order| P3
+                    P3 --> D3
+                    P3 -->|Order Summary| Customer
+
+                    P3 -->|Send Payment| P4
+                    P4 --> PaymentGateway
+                    PaymentGateway -->|Payment Confirmation| P4
+                    P4 --> D4
+                    P4 -->|Invoice/Receipt| Customer
+
+                    %% Admin Interactions
+                    Admin -->|Manage Users/Orders| P5
+                    P5 --> D1
+                    P5 --> D2
+                    P5 --> D3
+                    P5 -->|Reports| Admin
+            </div>
+            <textarea id="level1-dfd-code" class="w-full h-48 p-4 rounded-lg" readonly>graph TD;
+    %% External Entities
+    Customer[External Entity: Customer]
+    Admin[External Entity: Admin]
+    PaymentGateway[External Entity: Payment Gateway]
+
+    %% Internal Processes
+    P1[Process: 1. User Management]
+    P2[Process: 2. Product Browsing]
+    P3[Process: 3. Order Processing]
+    P4[Process: 4. Payment Handling]
+    P5[Process: 5. Admin Control]
+
+    %% Data Stores
+    D1[(User Database)]
+    D2[(Product Catalog)]
+    D3[(Order Records)]
+    D4[(Payment Records)]
+
+    %% Customer Interactions
+    Customer -->|Register/Login| P1
+    P1 --> D1
+    P1 -->|Profile Info| Customer
+
+    Customer -->|Browse Products| P2
+    P2 --> D2
+    P2 -->|Product Info| Customer
+
+    Customer -->|Place Order| P3
+    P3 --> D3
+    P3 -->|Order Summary| Customer
+
+    P3 -->|Send Payment| P4
+    P4 --> PaymentGateway
+    PaymentGateway -->|Payment Confirmation| P4
+    P4 --> D4
+    P4 -->|Invoice/Receipt| Customer
+
+    %% Admin Interactions
+    Admin -->|Manage Users/Orders| P5
+    P5 --> D1
+    P5 --> D2
+    P5 --> D3
+    P5 -->|Reports| Admin</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('level1-dfd-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="class-diagram" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Class Diagram</h2>
+            <div class="mermaid">
+                classDiagram
+                    %% Enumerations
+                    class UserState {
+                        <<enumeration>>
+                        New
+                        Active
+                        Blocked
+                        Banned
+                    }
+
+                    class OrderStatus {
+                        <<enumeration>>
+                        New
+                        Hold
+                        Shipped
+                        Delivered
+                        Closed
+                    }
+
+                    %% Main Classes
+                    class WebUser {
+                        +login_id: String
+                        -password: String
+                        +state: UserState
+                        +authenticate()
+                    }
+
+                    class Customer {
+                        +id: String
+                        +address: Address
+                        +phone: String
+                        +email: String
+                    }
+
+                    class Account {
+                        +id: String
+                        +is_closed: Boolean
+                        +open_date: Date
+                        +closed_date: Date
+                    }
+
+                    class Payment {
+                        +id: String
+                        +paid_date: Date
+                        +total: Float
+                        +details: String
+                        +billing_address: Address
+                    }
+
+                    class Order {
+                        +number: String
+                        +created_date: Date
+                        +ordered_date: Date
+                        +shipped_date: Date
+                        +ship_to: Address
+                        +status: OrderStatus
+                        +total: Float
+                    }
+
+                    class ShoppingCart {
+                        +id: String
+                        +checkout()
+                    }
+
+                    class LineItem {
+                        +quantity: Integer
+                        +price: Float
+                    }
+
+                    class Product {
+                        +id: String
+                        +name: String
+                    }
+
+                    class Supplier {
+                        +id: String
+                    }
+
+                    class Address {
+                        +street: String
+                        +city: String
+                        +zip_code: String
+                    }
+
+                    %% Relationships
+                    WebUser "1" --> "0..1" Customer : "≪extends≫"
+                    Customer "1" --> "1" Account
+                    Customer "1" --> "0..*" Order : "places"
+                    Order "1" --> "1..*" LineItem : "contains"
+                    ShoppingCart "1" --> "1..*" LineItem : "temporary"
+                    LineItem "1" --> "1" Product : "references"
+                    Product "1" --> "1" Supplier : "supplied by"
+                    Order "1" --> "0..1" Payment : "processed via"
+            </div>
+            <textarea id="class-diagram-code" class="w-full h-48 p-4 rounded-lg" readonly>classDiagram
+    %% Enumerations
+    class UserState {
+        <<enumeration>>
+        New
+        Active
+        Blocked
+        Banned
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        New
+        Hold
+        Shipped
+        Delivered
+        Closed
+    }
+
+    %% Main Classes
+    class WebUser {
+        +login_id: String
+        -password: String
+        +state: UserState
+        +authenticate()
+    }
+
+    class Customer {
+        +id: String
+        +address: Address
+        +phone: String
+        +email: String
+    }
+
+    class Account {
+        +id: String
+        +is_closed: Boolean
+        +open_date: Date
+        +closed_date: Date
+    }
+
+    class Payment {
+        +id: String
+        +paid_date: Date
+        +total: Float
+        +details: String
+        +billing_address: Address
+    }
+
+    class Order {
+        +number: String
+        +created_date: Date
+        +ordered_date: Date
+        +shipped_date: Date
+        +ship_to: Address
+        +status: OrderStatus
+        +total: Float
+    }
+
+    class ShoppingCart {
+        +id: String
+        +checkout()
+    }
+
+    class LineItem {
+        +quantity: Integer
+        +price: Float
+    }
+
+    class Product {
+        +id: String
+        +name: String
+    }
+
+    class Supplier {
+        +id: String
+    }
+
+    class Address {
+        +street: String
+        +city: String
+        +zip_code: String
+    }
+
+    %% Relationships
+    WebUser "1" --> "0..1" Customer : "≪extends≫"
+    Customer "1" --> "1" Account
+    Customer "1" --> "0..*" Order : "places"
+    Order "1" --> "1..*" LineItem : "contains"
+    ShoppingCart "1" --> "1..*" LineItem : "temporary"
+    LineItem "1" --> "1" Product : "references"
+    Product "1" --> "1" Supplier : "supplied by"
+    Order "1" --> "0..1" Payment : "processed via"</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('class-diagram-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="activity-diagram" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Activity Diagram</h2>
+            <div class="mermaid">
+                flowchart TD
+                    A1([Start])
+                    A2[Search Items]
+                    A3{Item Found?}
+                    A4[View Item]
+                    A5{Made Decision?}
+                    A6[Browse Items]
+                    A7[Add to Shopping Cart]
+                    A8[Check Shopping Cart]
+                    A9{Proceed or View Cart?}
+                    A10[Proceed to Checkout]
+                    A11[View Shopping Cart]
+                    A12{Update Needed?}
+                    A13[Update Shopping Cart]
+                    A14[Done with Shopping?]
+                    A15[More Shopping]
+                    A16([End])
+
+                    %% Flow
+                    A1 --> A2
+                    A2 --> A3
+                    A3 -- No --> A6
+                    A3 -- Yes --> A4
+                    A4 --> A5
+                    A5 -- No --> A6
+                    A5 -- Yes --> A7
+                    A7 --> A8
+                    A8 --> A9
+                    A9 -- Proceed --> A10
+                    A9 -- View Cart --> A11
+                    A11 --> A12
+                    A12 -- Yes --> A13 --> A8
+                    A12 -- No --> A14
+                    A14 -- Yes --> A10
+                    A14 -- No --> A15 --> A6
+                    A10 --> A16
+            </div>
+            <textarea id="activity-diagram-code" class="w-full h-48 p-4 rounded-lg" readonly>flowchart TD
+    A1([Start])
+    A2[Search Items]
+    A3{Item Found?}
+    A4[View Item]
+    A5{Made Decision?}
+    A6[Browse Items]
+    A7[Add to Shopping Cart]
+    A8[Check Shopping Cart]
+    A9{Proceed or View Cart?}
+    A10[Proceed to Checkout]
+    A11[View Shopping Cart]
+    A12{Update Needed?}
+    A13[Update Shopping Cart]
+    A14[Done with Shopping?]
+    A15[More Shopping]
+    A16([End])
+
+    %% Flow
+    A1 --> A2
+    A2 --> A3
+    A3 -- No --> A6
+    A3 -- Yes --> A4
+    A4 --> A5
+    A5 -- No --> A6
+    A5 -- Yes --> A7
+    A7 --> A8
+    A8 --> A9
+    A9 -- Proceed --> A10
+    A9 -- View Cart --> A11
+    A11 --> A12
+    A12 -- Yes --> A13 --> A8
+    A12 -- No --> A14
+    A14 -- Yes --> A10
+    A14 -- No --> A15 --> A6
+    A10 --> A16</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('activity-diagram-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="sequence-diagram" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Sequence Diagram</h2>
+            <div class="mermaid">
+                sequenceDiagram
+                    participant User
+                    participant Website
+                    participant ProductCatalog
+                    participant ShoppingCart
+                    participant PaymentGateway
+                    participant OrderSystem
+
+                    User->>Website: Browse Products
+                    Website->>ProductCatalog: Request Product List
+                    ProductCatalog-->>Website: Send Product List
+                    Website-->>User: Display Products
+
+                    User->>Website: Select Product
+                    User->>ShoppingCart: Add Product to Cart
+
+                    User->>Website: View Cart
+                    Website->>ShoppingCart: Get Cart Details
+                    ShoppingCart-->>Website: Send Cart Details
+                    Website-->>User: Display Cart
+
+                    User->>Website: Proceed to Checkout
+                    Website->>User: Request Login/Register
+                    User->>Website: Provide Credentials
+                    Website->>User: Login Success
+
+                    User->>Website: Enter Shipping Details
+                    User->>Website: Enter Payment Details
+
+                    Website->>PaymentGateway: Process Payment
+                    PaymentGateway-->>Website: Payment Confirmation
+
+                    Website->>OrderSystem: Place Order
+                    OrderSystem-->>Website: Order Confirmation
+                    Website-->>User: Display Order Confirmation
+            </div>
+            <textarea id="sequence-diagram-code" class="w-full h-48 p-4 rounded-lg" readonly>sequenceDiagram
+    participant User
+    participant Website
+    participant ProductCatalog
+    participant ShoppingCart
+    participant PaymentGateway
+    participant OrderSystem
+
+    User->>Website: Browse Products
+    Website->>ProductCatalog: Request Product List
+    ProductCatalog-->>Website: Send Product List
+    Website-->>User: Display Products
+
+    User->>Website: Select Product
+    User->>ShoppingCart: Add Product to Cart
+
+    User->>Website: View Cart
+    Website->>ShoppingCart: Get Cart Details
+    ShoppingCart-->>Website: Send Cart Details
+    Website-->>User: Display Cart
+
+    User->>Website: Proceed to Checkout
+    Website->>User: Request Login/Register
+    User->>Website: Provide Credentials
+    Website->>User: Login Success
+
+    User->>Website: Enter Shipping Details
+    User->>Website: Enter Payment Details
+
+    Website->>PaymentGateway: Process Payment
+    PaymentGateway-->>Website: Payment Confirmation
+
+    Website->>OrderSystem: Place Order
+    OrderSystem-->>Website: Order Confirmation
+    Website-->>User: Display Order Confirmation</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('sequence-diagram-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+
+        <section id="usecase-diagram" class="hidden space-y-6">
+            <h2 class="text-2xl font-semibold text-green-300">Use Case Diagram</h2>
+            <div class="mermaid">
+                graph TD
+                    %% Actors
+                    RegisteredCustomer((Registered Customer))
+                    WebCustomer((Web Customer))
+                    NewCustomer((New Customer))
+                    IdentityProvider((Identity Provider))
+                    PayPal((PayPal))
+
+                    %% Use Cases
+                    Auth[<<Service>> Authentication]
+                    Register[Client Register]
+                    Purchase[Purchase]
+                    Checkout[Checkout]
+                    Payment[Payment]
+                    Credit[Credit]
+
+                    %% Relationships
+                    RegisteredCustomer --> Auth
+                    WebCustomer --> Purchase
+                    WebCustomer --> Checkout
+                    WebCustomer --> Payment
+                    NewCustomer --> Register
+                    IdentityProvider --> Auth
+                    PayPal --> Payment
+
+                    %% Includes (representing include relationships visually)
+                    Purchase --> Checkout
+                    Checkout --> Payment
+                    Payment --> Credit
+
+                    %% Subsystem boundary (represented by logical grouping)
+                    subgraph "<<<Subsystem>>> Online Shopping"
+                        Auth
+                        Register
+                        Purchase
+                        Checkout
+                        Payment
+                        Credit
+                    end
+            </div>
+            <textarea id="usecase-diagram-code" class="w-full h-48 p-4 rounded-lg" readonly>graph TD
+    %% Actors
+    RegisteredCustomer((Registered Customer))
+    WebCustomer((Web Customer))
+    NewCustomer((New Customer))
+    IdentityProvider((Identity Provider))
+    PayPal((PayPal))
+
+    %% Use Cases
+    Auth[<<Service>> Authentication]
+    Register[Client Register]
+    Purchase[Purchase]
+    Checkout[Checkout]
+    Payment[Payment]
+    Credit[Credit]
+
+    %% Relationships
+    RegisteredCustomer --> Auth
+    WebCustomer --> Purchase
+    WebCustomer --> Checkout
+    WebCustomer --> Payment
+    NewCustomer --> Register
+    IdentityProvider --> Auth
+    PayPal --> Payment
+
+    %% Includes (representing include relationships visually)
+    Purchase --> Checkout
+    Checkout --> Payment
+    Payment --> Credit
+
+    %% Subsystem boundary (represented by logical grouping)
+    subgraph "<<<Subsystem>>> Online Shopping"
+        Auth
+        Register
+        Purchase
+        Checkout
+        Payment
+        Credit
+    end</textarea>
+            <div class="flex space-x-4">
+                <button onclick="copyCode('usecase-diagram-code')" class="btn bg-green-600 text-white py-2 px-4 rounded-lg">Copy Code</button>
+                <button onclick="navigateTo('home')" class="btn bg-gray-600 text-white py-2 px-4 rounded-lg">Back to Home</button>
+            </div>
+        </section>
+    </main>
+    <footer class="bg-gray-900 p-4 text-center text-gray-400">
+        <p>&copy; 2025 Diagram Dashboard. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+
+        // Navigation function
+        function navigateTo(pageId) {
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(pageId).classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        // Copy code to clipboard
+        function copyCode(textareaId) {
+            const textarea = document.getElementById(textareaId);
+            textarea.select();
+            document.execCommand('copy');
+            alert('Code copied to clipboard!');
+        }
+    </script>
+</body>
+</html>
